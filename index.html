@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>KML to CSV converter</title>
+    <style>
+    body{background-color: #fff1e0;font-family:metric;}
+    #drag-file{position:absolute;width:300px;height:250px;left:10%;top:15%;background-color: #bb6d82;text-align:center;}
+
+    p.instruction{padding-top: 100px;color:#fff;font-size:1.2em;}
+
+    </style>
+  </head>
+  <body>
+    <!-- <h3>KML to CSV converter</h3> -->
+    <!-- All of the Node.js APIs are available in this renderer process. -->
+
+    <div id="drag-file">
+    <p class="instruction">Drag your KML file(s) here</p>
+</div>
+
+<script>
+    (function () {
+        var holder = document.getElementById('drag-file');
+
+        holder.ondragover = () => {
+            return false;
+        };
+
+        holder.ondragleave = () => {
+            return false;
+        };
+
+        holder.ondragend = () => {
+            return false;
+        };
+
+        holder.ondrop = (e) => {
+            e.preventDefault();
+            for (let f of e.dataTransfer.files) {
+                convertFile(f)
+            }
+            
+            return false;
+        };
+    })();
+</script>
+
+
+  </body>
+
+  <script>
+    require('./renderer.js')
+    var fs = require('fs');
+    var d3 = require('d3-dsv');
+    var parseString = require('xml2js').parseString;
+
+    function convertFile(file){
+
+        const input = file.path;
+        const outputname = input.split(".kml")[0]+".csv";
+
+        //load the kml
+        fs.readFile( input, function(err, data) {
+            //parse into js
+            parseString(data, function (err, result) {
+
+                //locate the Placemarks
+                var markers = result.kml.Document[0].Folder[0].Placemark
+                var output = [];
+
+                //for each marker, extract geo information
+                markers.forEach(function(d){
+                    var record = {};
+                    var locality = d.name[0];
+                    var coords = d.Point[0].coordinates[0].split(",");
+                    record.name=locality;//name
+                    record.lat=coords[1];
+                    //need regex to filter out the long from the google kml
+                    var matched = coords[0].match(/(-*[0-9]+.{1}[0-9]+)/)[0]
+                    record.long=matched
+                    output.push(record)
+                })
+
+                //convert the output to csv
+                var csvOutput = d3.csvFormat(output);
+
+                //write the file back in to the output directory
+                fs.writeFile(outputname,csvOutput);
+            })//end parseString
+        })//end fs.readFile
+    }//end convertFile
+
+  </script>
+</html>

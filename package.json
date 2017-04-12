@@ -1,4 +1,7 @@
 {
+  "name"    : "kml2csv",
+  "version" : "0.1.0",
+  "main"    : "main.js",
   "dependencies": {
     "d3-dsv": "^1.0.5",
     "xml2js": "^0.4.17"
